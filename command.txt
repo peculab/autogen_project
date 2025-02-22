@@ -1,0 +1,12 @@
+python -m venv venv
+.\venv\Scripts\activate
+
+https://github.com/microsoft/autogen
+
+pip install -U autogen-agentchat autogen-ext[openai,web-surfer] python-dotenv
+pip install autogen-agentchat python-dotenv playwright
+playwright install
+
+pip install -U autogenstudio
+autogenstudio ui --port 8080 --appdir ./my-app
+http://localhost:8080
