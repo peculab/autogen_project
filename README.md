@@ -8,21 +8,8 @@
 2. **multiAgent.py**  
    一個多代理人協作對話範例，利用 RoundRobinGroupChat 將三個代理人（Assistant、WebSurfer 與 UserProxy）組成團隊，完成「請搜尋 Gemini 的相關資訊，並撰寫一份簡短摘要」的任務。
 
----
-
-## 目錄
-
-- [功能介紹](#功能介紹)
-- [前置需求](#前置需求)
-- [安裝與設定](#安裝與設定)
-- [使用方式](#使用方式)
-  - [運行 main.py](#運行-mainpy)
-  - [運行 multiAgent.py](#運行-multiagentpy)
-- [程式碼說明](#程式碼說明)
-  - [main.py](#mainpy)
-  - [multiAgent.py](#multiagentpy)
-- [License](#license)
-- [貢獻](#貢獻)
+3. **dataAgent.py**
+   這是一個多代理人協作對話範例，利用 RoundRobinGroupChat 將四個代理人（DataAgent、MultimodalWebSurfer、Assistant 與 UserProxy）組成團隊，分批處理 CSV 資料，並要求 MultimodalWebSurfer 搜尋外部網站，納入最新的寶寶照護建議資訊，最終將所有對話內容整合並輸出為 CSV。
 
 ---
 
@@ -34,6 +21,12 @@
 - **多代理人對話範例（multiAgent.py）**  
   利用 AutoGen 框架建立一個多代理人團隊：
   - **AssistantAgent** 與 **MultimodalWebSurfer**：負責回答與資訊檢索。
+  - **UserProxyAgent**：模擬使用者參與對話。  
+  團隊以輪詢方式進行對話，直到對話中出現 `"exit"` 關鍵字為止。
+
+- **多代理人檔案 I/O 範例（dataAgent.py）**
+  利用 AutoGen 框架建立一個多代理人團隊：
+  - **DataAgent** 與 **MultimodalWebSurfer**：分別負責 CSV 資料分析、外部資訊檢索與問題解答。
   - **UserProxyAgent**：模擬使用者參與對話。  
   團隊以輪詢方式進行對話，直到對話中出現 `"exit"` 關鍵字為止。
 
