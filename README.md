@@ -30,13 +30,13 @@
   - **UserProxyAgent**：模擬使用者參與對話。  
   團隊以輪詢方式進行對話，直到對話中出現 `"exit"` 關鍵字為止。
 
-- **多代理人檔案 I/O 範例（dataAgent.py）**
+- **多代理人檔案 I/O 範例（dataAgent.py）**  
   利用 AutoGen 框架建立一個多代理人團隊：
   - **DataAgent** 與 **MultimodalWebSurfer**：分別負責 CSV 資料分析、外部資訊檢索與問題解答。
   - **UserProxyAgent**：模擬使用者參與對話。  
   團隊以輪詢方式進行對話，直到對話中出現 `"exit"` 關鍵字為止。
 
-- **多代理人檔案 I/O 與多模型範例（multiDataAgent.py）**
+- **多代理人檔案 I/O 與多模型範例（multiDataAgent.py）**  
   利用 AutoGen 框架建立一個多代理人團隊：
   - 多模型使用：使用 model_client_data_web（gemini-1.5-flash-8b）供 data_agent 與 web_surfer 使用，進行初步資料分析。使用 model_client_assistant（gemini-2.0-flash）供 assistant 使用，依據先前分析結果整合外部資訊，生成最終的寶寶照護建議。
   - 多 prompt 寫法：第一階段的 prompt (prompt_8b) 用於要求代理人從 CSV 資料中分析寶寶的日常行為與照護需求。第二階段的 prompt (prompt_flash) 則要求代理人參考前一階段分析結果，結合外部網站搜尋到的最新資訊，生成完整且具參考價值的照護建議。
