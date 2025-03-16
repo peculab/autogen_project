@@ -127,7 +127,7 @@ def main():
     dialogue_col = select_dialogue_column(df)
     print(f"使用欄位作為逐字稿：{dialogue_col}")
     
-    batch_size = 20
+    batch_size = 10
     total = len(df)
     for start_idx in range(0, total, batch_size):
         end_idx = min(start_idx + batch_size, total)
