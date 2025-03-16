@@ -1,23 +1,16 @@
 import os
-import re
 import json
-import asyncio
-import sys
+import time
 import pandas as pd
+import sys
 from dotenv import load_dotenv
-from autogen_ext.models.openai import OpenAIChatCompletionClient
+from google import genai
+from google.genai.errors import ServerError
 
-# 如果有使用終止條件，可自行定義，否則可移除
-class TextMentionTermination:
-    def __init__(self, termination_text):
-        self.termination_text = termination_text
-
-    def check(self, text):
-        return self.termination_text in text
-
+# 載入 .env 中的 GEMINI_API_KEY
 load_dotenv()
 
-# 定義評分項目
+# 定義評分項目（依據原始 xlsx 編碼規則）
 ITEMS = [
     "引導",
     "評估(口語、跟讀的內容有關)",
@@ -32,90 +25,127 @@ ITEMS = [
     "備註"
 ]
 
-def parse_json_response(response_text):
+def parse_response(response_text):
     """
-    解析 Gemini API 回傳的 JSON 格式結果，
-    預期回傳內容為有效 JSON，鍵為 ITEMS 中各項，
-    值為 "1" 或空字串。若缺少項目則自動補空。
+    嘗試解析 Gemini API 回傳的 JSON 格式結果。
+    如果回傳內容被 markdown 的反引號包圍，則先移除這些標記。
+    若解析失敗，則回傳所有項目皆為空的字典。
     """
+    cleaned = response_text.strip()
+    # 如果回傳內容以三個反引號開始，則移除第一行和最後一行
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        # 移除第一行（例如 ```json 或 ```）
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        # 如果最後一行是 ``` 也移除
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+    
     try:
-        result = json.loads(response_text)
+        result = json.loads(cleaned)
         for item in ITEMS:
             if item not in result:
                 result[item] = ""
         return result
     except Exception as e:
         print(f"解析 JSON 失敗：{e}")
+        print("原始回傳內容：", response_text)
         return {item: "" for item in ITEMS}
 
-async def process_chunk_score(chunk, start_idx, total_records, model_client_8b, model_client_flash, termination_condition):
-    evaluation_results = []
-    dialogues = chunk["dialogue"].tolist()
-    
-    for dialogue in dialogues:
-        # 系統提示：要求對每一句話依據編碼規則評估是否觸及到各項目，
-        # 若觸及則標記為 1，否則留空，回覆必須為有效 JSON 格式。
-        messages = [
-            {"role": "system", "content": (
-                "你是一位親子對話分析專家，請根據以下編碼規則評估家長唸故事書時的每一句話，"
-                "判斷是否觸及下列各項：\n" +
-                "\n".join(ITEMS) +
-                "\n\n請依據評估結果，對每個項目：若觸及則標記為 1，否則留空，"
-                "請僅以有效 JSON 格式回覆，鍵為項目名稱，值為 '1' 或空字串。"
-            )},
-            {"role": "user", "content": dialogue}
-        ]
-        
-        try:
-            response = await model_client_8b.chat(messages=messages)
-            response_text = response["choices"][0]["message"]["content"]
-            eval_dict = parse_json_response(response_text)
-        except Exception as e:
-            print(f"API 呼叫失敗，錯誤：{e}")
-            eval_dict = {item: "" for item in ITEMS}
-        
-        evaluation_results.append(eval_dict)
-    
-    # 將每一句話的評估結果展開成多個欄位，並與原始逐字稿合併
-    eval_df = pd.DataFrame(evaluation_results)
-    chunk = chunk.rename(columns={"dialogue": "對話內容"})
-    combined = pd.concat([chunk, eval_df], axis=1)
-    return combined
+def select_dialogue_column(chunk: pd.DataFrame) -> str:
+    """
+    根據 CSV 欄位內容自動選取存放逐字稿的欄位。
+    優先檢查常見欄位名稱："text", "utterance", "content", "dialogue"
+    若都不存在，則回傳第一個欄位。
+    """
+    preferred = ["text", "utterance", "content", "dialogue", "Dialogue"]
+    for col in preferred:
+        if col in chunk.columns:
+            return col
+    print("CSV 欄位：", list(chunk.columns))
+    return chunk.columns[0]
 
-async def run_analysis(csv_file_path, chunk_size):
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
-    model_client_8b = OpenAIChatCompletionClient("gemini-1.5-flash-8b", gemini_api_key)
-    model_client_flash = OpenAIChatCompletionClient("gemini-2.0-flash", gemini_api_key)
-    termination_condition = TextMentionTermination("exit")
+def process_batch_dialogue(client, dialogues: list, delimiter="-----"):
+    """
+    將多筆逐字稿合併成一個批次請求。
+    提示中要求模型對每筆逐字稿產生 JSON 格式結果，
+    並以指定的 delimiter 分隔各筆結果。
+    """
+    prompt = (
+        "你是一位親子對話分析專家，請根據以下編碼規則評估家長唸故事書時的每一句話，\n"
+        + "\n".join(ITEMS) +
+        "\n\n請依據評估結果，對每個項目：若觸及則標記為 1，否則留空。"
+        " 請對每筆逐字稿產生 JSON 格式回覆，並在各筆結果間用下列分隔線隔開：\n"
+        f"{delimiter}\n"
+        "例如：\n"
+        "```json\n"
+        "{\n  \"引導\": \"1\",\n  \"評估(口語、跟讀的內容有關)\": \"\",\n  ...\n}\n"
+        f"{delimiter}\n"
+        "{{...}}\n```"
+    )
+    batch_text = f"\n{delimiter}\n".join(dialogues)
+    content = prompt + "\n\n" + batch_text
 
-    chunks = list(pd.read_csv(csv_file_path, chunksize=chunk_size))
-    total_records = sum(chunk.shape[0] for chunk in chunks)
-
-    tasks = [
-        process_chunk_score(chunk, idx * chunk_size, total_records, model_client_8b, model_client_flash, termination_condition)
-        for idx, chunk in enumerate(chunks)
-    ]
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=content
+        )
+    except ServerError as e:
+        print(f"API 呼叫失敗：{e}")
+        return [{item:"" for item in ITEMS} for _ in dialogues]
     
-    processed_chunks = await asyncio.gather(*tasks)
-    final_df = pd.concat(processed_chunks, ignore_index=True)
-    
-    output_file = "113.csv"
-    final_df.to_csv(output_file, index=False, encoding="utf-8-sig")
-    return f"分數表已生成：{output_file}"
-
-async def analyze_file(csv_file_path):
-    chunk_size = 100  # 可根據檔案大小調整
-    result = await run_analysis(csv_file_path, chunk_size)
-    return result
+    print("批次 API 回傳內容：", response.text)
+    parts = response.text.split(delimiter)
+    results = []
+    for part in parts:
+        part = part.strip()
+        if part:
+            results.append(parse_response(part))
+    if len(results) < len(dialogues):
+        results.extend([{item:"" for item in ITEMS}] * (len(dialogues)-len(results)))
+    return results
 
 def main():
     if len(sys.argv) < 2:
         print("Usage: python RDai.py <path_to_csv>")
         sys.exit(1)
     
-    csv_file_path = sys.argv[1]
-    result = asyncio.run(analyze_file(csv_file_path))
-    print(result)
+    input_csv = sys.argv[1]
+    output_csv = "113_batch.csv"
+    if os.path.exists(output_csv):
+        os.remove(output_csv)
+    
+    df = pd.read_csv(input_csv)
+    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    if not gemini_api_key:
+        raise ValueError("請設定環境變數 GEMINI_API_KEY")
+    client = genai.Client(api_key=gemini_api_key)
+    
+    dialogue_col = select_dialogue_column(df)
+    print(f"使用欄位作為逐字稿：{dialogue_col}")
+    
+    batch_size = 20
+    total = len(df)
+    for start_idx in range(0, total, batch_size):
+        end_idx = min(start_idx + batch_size, total)
+        batch = df.iloc[start_idx:end_idx]
+        dialogues = batch[dialogue_col].tolist()
+        dialogues = [str(d).strip() for d in dialogues]
+        batch_results = process_batch_dialogue(client, dialogues)
+        batch_df = batch.copy()
+        for item in ITEMS:
+            batch_df[item] = [res.get(item, "") for res in batch_results]
+        if start_idx == 0:
+            batch_df.to_csv(output_csv, index=False, encoding="utf-8-sig")
+        else:
+            batch_df.to_csv(output_csv, mode='a', index=False, header=False, encoding="utf-8-sig")
+        print(f"已處理 {end_idx} 筆 / {total}")
+        time.sleep(1)
+    
+    print("全部處理完成。最終結果已寫入：", output_csv)
 
 if __name__ == "__main__":
     main()
