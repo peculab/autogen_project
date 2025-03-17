@@ -35,10 +35,8 @@ def parse_response(response_text):
     # 如果回傳內容以三個反引號開始，則移除第一行和最後一行
     if cleaned.startswith("```"):
         lines = cleaned.splitlines()
-        # 移除第一行（例如 ```json 或 ```）
         if lines[0].startswith("```"):
             lines = lines[1:]
-        # 如果最後一行是 ``` 也移除
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         cleaned = "\n".join(lines).strip()
@@ -70,7 +68,7 @@ def select_dialogue_column(chunk: pd.DataFrame) -> str:
 def process_batch_dialogue(client, dialogues: list, delimiter="-----"):
     """
     將多筆逐字稿合併成一個批次請求。
-    提示中要求模型對每筆逐字稿產生 JSON 格式結果，
+    提示中要求模型對每筆逐字稿產生 JSON 格式回覆，
     並以指定的 delimiter 分隔各筆結果。
     """
     prompt = (
@@ -95,7 +93,7 @@ def process_batch_dialogue(client, dialogues: list, delimiter="-----"):
         )
     except ServerError as e:
         print(f"API 呼叫失敗：{e}")
-        return [{item:"" for item in ITEMS} for _ in dialogues]
+        return [{item: "" for item in ITEMS} for _ in dialogues]
     
     print("批次 API 回傳內容：", response.text)
     parts = response.text.split(delimiter)
@@ -104,8 +102,11 @@ def process_batch_dialogue(client, dialogues: list, delimiter="-----"):
         part = part.strip()
         if part:
             results.append(parse_response(part))
-    if len(results) < len(dialogues):
-        results.extend([{item:"" for item in ITEMS}] * (len(dialogues)-len(results)))
+    # 若結果數量多於原始筆數，僅取前面對應筆數；若不足則補足空結果
+    if len(results) > len(dialogues):
+        results = results[:len(dialogues)]
+    elif len(results) < len(dialogues):
+        results.extend([{item: "" for item in ITEMS}] * (len(dialogues) - len(results)))
     return results
 
 def main():
