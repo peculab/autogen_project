@@ -111,7 +111,7 @@ def process_batch_dialogue(client, dialogues: list, delimiter="-----"):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python RDai.py <path_to_csv>")
+        print("Usage: python DRai.py <path_to_csv>")
         sys.exit(1)
     
     input_csv = sys.argv[1]
