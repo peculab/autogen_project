@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <title>情緒日記分析系統</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>📂 上傳日誌</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="file" required />
+        <button type="submit">上傳並分析</button>
+    </form>
+
+    <h2>📊 情緒走向</h2>
+    <div id="plot">
+        <img id="mood-trend" src="" alt="心情趨勢圖將顯示於此" style="width: 100%; display: none;" />
+    </div>
+
+    <h2>🧩 即時分析進度</h2>
+    <div id="progress"></div>
+
+    <h2>💡 建議</h2>
+    <div id="suggestions"></div>
+
+    <script>
+        const socket = io();
+        const form = document.getElementById('upload-form');
+        const progress = document.getElementById('progress');
+        const suggestions = document.getElementById('suggestions');
+        const moodTrend = document.getElementById('mood-trend');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            fetch('/upload', { method: 'POST', body: formData });
+            progress.innerHTML = '🟢 檔案上傳成功，開始分析中...';
+            suggestions.innerHTML = '';
+        });
+
+        socket.on('update', function (data) {
+            progress.innerHTML += `<p>${data.message}</p>`;
+        });
+
+        socket.on('plot_generated', function (data) {
+            moodTrend.src = data.plot_url + '?t=' + new Date().getTime();
+            moodTrend.style.display = 'block';
+        });
+
+        socket.on('suggestions', function (data) {
+            suggestions.innerHTML = `<pre>${data.suggestions}</pre>`;
+        });
+    </script>
+</body>
+</html>
