@@ -1,29 +1,63 @@
 import os
 import asyncio
 import json
+from dotenv import load_dotenv, find_dotenv
+from flask_socketio import SocketIO
+from google import genai
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_agentchat.messages import TextMessage
-from autogen_ext.models.openai import OpenAIChatCompletionClient
-from dotenv import load_dotenv
 
-load_dotenv()
+# ✅ 載入 .env 並啟用 Gemini 原生用法
+dotenv_path = find_dotenv()
+print(f"✅ 目前使用的 .env 路徑: {dotenv_path}")
+load_dotenv(dotenv_path)
 
-async def process_user_diary(socketio, user_id, user_entries):
-    model_client = OpenAIChatCompletionClient(
-        model="gemini-2.0-flash",
-        api_key=os.getenv("GEMINI_API_KEY"),
-    )
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+print(GEMINI_API_KEY)
 
-    # 只取前 5 筆資料，並將 Timestamp 轉為字串避免 JSON 序列化問題
+# ✅ 使用 Gemini 原生 client
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+# ✅ 封裝成符合 autogen agentchat 的結構
+class GeminiChatCompletionClient:
+    def __init__(self, model="gemini-1.5-flash-8b"):
+        self.model = model
+        self.model_info = {"vision": False}  # ✅ 避免 autogen 出錯
+
+    async def create(self, messages, **kwargs):
+        parts = []
+        for m in messages:
+            if hasattr(m, 'content'):
+                parts.append(str(m.content))
+            elif isinstance(m, dict) and 'content' in m:
+                parts.append(str(m['content']))
+        content = "\n".join(parts)
+        response = client.models.generate_content(
+            model=self.model,
+            contents=content
+        )
+        #print("📨 Gemini 回應內容：", response)
+        return type("Response", (), {
+            "text": response.text,
+            "content": response.text,
+            "usage": {
+                "prompt_tokens": 0,
+                "completion_tokens": 0
+            }
+        })
+
+# ✅ 初始化封裝後的 Gemini client
+model_client = GeminiChatCompletionClient()
+
+# ✅ 多 Agent 分析流程
+async def process_user_diary(socketio: SocketIO, user_id, user_entries):
     records = user_entries.to_dict(orient='records')
     if len(records) > 5:
         prompt_records = json.dumps(records[:5], ensure_ascii=False, indent=2, default=str) + "\n... (以下省略)"
     else:
         prompt_records = json.dumps(records, ensure_ascii=False, indent=2, default=str)
-        
-    # 更新 prompt，要求 AI 根據日記產生全新的正向建議，
-    # 並在回覆最後直接輸出最終建議，格式必須以『最終建議：』開頭
+
     prompt = (
         f"目前正在處理用戶 {user_id} 的日記，共 {len(user_entries)} 則。\n"
         f"日記內容（僅顯示前 5 筆）：\n{prompt_records}\n\n"
@@ -31,22 +65,27 @@ async def process_user_diary(socketio, user_id, user_entries):
         "1. 情緒與思考模式的詳細分析\n"
         "2. 實際可行的行動方案建議\n"
         "3. AI 教練如何提供個性化互動建議\n\n"
-        "請注意：請僅生成全新內容，不要重複上述提示。請在回覆最後直接輸出最終建議，格式必須以『最終建議：』開頭，後面跟上你的建議內容。\n"
-        "例如：\n"
-        "最終建議：根據分析，建議您每天進行10分鐘冥想，並根據心情記錄調整作息，同時與 AI 教練定期討論情緒管理策略。\n\n"
-        "請務必遵守上述要求。"
+        "請注意：請僅生成全新內容，不要重複上述提示。請在回覆最後直接輸出最終建議，格式必須以『最終建議：』開頭。"
     )
 
-    # 建立合法的 agent 名稱及顯示用對照字典
-    analysis_agent = AssistantAgent("analysis_expert", model_client)
-    coaching_agent = AssistantAgent("ai_coach", model_client)
+    analysis_agent = AssistantAgent(
+        name="analysis_expert",
+        model_client=model_client,
+        system_message="你是分析專家，擅長解讀使用者的情緒趨勢，請專業地進行分析。"
+    )
+
+    coaching_agent = AssistantAgent(
+        name="ai_coach",
+        model_client=model_client,
+        system_message="你是 AI 教練，擅長給出正向行動建議，請針對分析結果給出具體建議。"
+    )
+
     display_names = {
-         "analysis_expert": "分析專家",
-         "ai_coach": "AI 教練"
+        "analysis_expert": "分析專家",
+        "ai_coach": "AI 教練"
     }
 
-    team = RoundRobinGroupChat([analysis_agent, coaching_agent])
-    
+    team = RoundRobinGroupChat([analysis_agent, coaching_agent], max_turns=6)
     final_recommendation = None
 
     try:
@@ -54,18 +93,29 @@ async def process_user_diary(socketio, user_id, user_entries):
             if isinstance(event, TextMessage):
                 display_name = display_names.get(event.source, event.source)
                 message_text = f"🤖 [{display_name}]：{event.content}"
-                # 若訊息過長，僅截取前 500 個字顯示
-                if len(message_text) > 500:
-                    message_text = message_text[:500] + " ... (內容過長)"
-                socketio.emit('update', {'message': message_text})
-                
-                # 如果訊息中包含「最終建議：」則從中提取建議內容並更新【建議】區塊
+               
+                if len(message_text) > 1500:
+                    formatted_text = message_text[:1500] + "... (內容過長)"
+                else:
+                    formatted_text = message_text
+
+                socketio.emit('update', {
+                    'message': f"🤖 [{display_name}]：{formatted_text}",
+                    'source': event.source,
+                    'tag': 'analysis'  # 明確標記這是分析過程的訊息
+                })
+
+
                 if "最終建議：" in event.content:
                     final_recommendation = event.content.split("最終建議：")[-1].strip()
                     socketio.emit('suggestions', {'suggestions': final_recommendation})
+
     except asyncio.exceptions.CancelledError:
-        # 若因取消操作而發生 CancelledError，忽略即可
         pass
 
-async def run_multiagent_analysis(socketio, user_id, user_entries):
+async def run_multiagent_analysis(socketio: SocketIO, user_id, user_entries):
+    socketio.emit('update', {
+        'message': '🤖 系統：正在啟動分析專家與 AI 教練的協作...',
+        'tag': 'analysis'
+    })
     await process_user_diary(socketio, user_id, user_entries)
