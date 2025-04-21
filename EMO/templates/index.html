@@ -113,7 +113,7 @@
             $(`<p id="thinking-${data.agent}" class="thinking">🤖 [${data.agent}] 正在思考中...</p>`).appendTo(target);
         } else {
             $(`#thinking-${data.agent}`).remove();
-            const display = `<p><strong>🤖 [${data.agent}]：</strong> ${data.message}</p>`;
+            const display = `<p><strong> ${data.message}</strong></p>`;
             $(target).append(display);
             $(target).scrollTop($(target)[0].scrollHeight);
         }
