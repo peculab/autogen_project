@@ -1,129 +1,120 @@
-# 📄 心情日記多代理人分析系統
+# MCP Module – Multi-Agent Communication & Orchestration
 
-基於 Flask + SocketIO 實作的 **心情日記多代理人協作分析系統**，  
-後端使用 **Model Context Protocol (MCP)**，可靈活切換不同大型語言模型（Gemini、OpenAI、HuggingFace）。
+This module focuses on **multi-agent communication, coordination, and orchestration**, forming a core component of agentic AI systems.
 
----
-
-## 🚀 主要特色
-
-- **上傳心情日記 CSV** ➔ 自動分析心情趨勢與生成行動建議
-- **多代理人協作分析** ➔ 分析專家 + AI 教練
-- **即時互動回饋** ➔ 透過 WebSocket (SocketIO) 即時推送訊息
-- **彈性模型切換** ➔ 支援 Gemini、OpenAI、HuggingFace 模型
-- **美觀心情趨勢圖** ➔ 使用 SnowNLP 分析情緒並繪製曲線圖
+It is designed as part of a larger framework for building **LLM-powered multi-agent systems**, supporting both real-world applications and educational use.
 
 ---
 
-## 🛠️ 專案結構說明
+## 🔹 Overview
 
-| 檔案 | 說明 |
-|:---|:---|
-| `app.py` | 主 Flask 伺服器與 SocketIO 即時互動 |
-| `config.py` | 環境變數與模型設定管理 |
-| `multiagent.py` | 多代理人協作流程（使用 MCP 架構） |
-| `mcp.py` | Model-Context-Protocol 定義（模型、上下文、代理人） |
-| `EMOwithSnow.py` | 使用 SnowNLP 分析心情並繪製心情趨勢圖 |
-| `templates/index.html` | （請自行新增）前端上傳與即時顯示介面 |
+The MCP (Multi-agent Communication Protocol) module enables:
 
----
+- Communication between multiple AI agents  
+- Task coordination and delegation  
+- Structured workflows across agents  
+- Scalable orchestration of complex tasks  
 
-## ⚙️ 安裝與啟動
-
-### 1. 安裝必要套件
-
-```bash
-pip install -r requirements.txt
-```
-
-必要套件包含：
-
-- Flask
-- Flask-SocketIO
-- pandas
-- python-dotenv
-- matplotlib
-- seaborn
-- snownlp
-- openai
-- google-generativeai
-- requests
-
-### 2. 建立 `.env` 檔案
-
-```dotenv
-# 模型提供者設定：gemini / openai / hf
-MODEL_PROVIDER=gemini
-
-# 預設使用的模型版本
-DEFAULT_MODEL=gemini-2.5-pro-exp-03-25
-
-# API 金鑰設定
-GEMINI_API_KEY=你的_gemini_api_key
-OPENAI_API_KEY=你的_openai_api_key
-HF_API_KEY=你的_huggingface_api_key
-
-# 除錯模式（可選）
-DEBUG_MODE=false
-```
-
-> 📌 注意：建議使用 `gemini-2.5-pro-exp-03-25`，避免使用無免費額度的 Preview 版本！
-
-### 3. 啟動伺服器
-
-```bash
-python app.py
-```
-
-伺服器將會啟動於：[http://localhost:5000](http://localhost:5000)
+This module is essential for moving from single-agent systems to **collaborative AI systems**.
 
 ---
 
-## 📤 使用流程
+## 🔹 Key Concepts
 
-1. 打開瀏覽器進入首頁，上傳心情日記的 CSV 檔案。
-2. 系統自動產生心情趨勢圖，並即時顯示在前端。
-3. 啟動多代理人協作分析，並逐步即時推送分析結果。
-4. 最終提供個性化的正向行動建議。
-
----
-
-## 📄 上傳 CSV 格式要求
-
-CSV 檔案需包含以下欄位：
-
-| 欄位名稱 | 說明 |
-|:---|:---|
-| `日期` | 日記紀錄日期 |
-| `心情指數` | 用戶自行記錄的心情分數（數字） |
-| `心情小語` | 一段描述心情的文字（進行情緒分析） |
-
-範例：
-
-| 日期 | 心情指數 | 心情小語 |
-|:---|:---|:---|
-| 2024-01-01 | 7 | 今天心情很好，天氣超棒。 |
-| 2024-01-02 | 5 | 有點疲倦，但還算可以。 |
+### 1. Agent Communication
+- Message passing between agents  
+- Context sharing  
+- Role-based interactions  
 
 ---
 
-## 🧠 系統架構流程圖
-
-```mermaid
-flowchart TD
-    A[用戶上傳 CSV] --> B[Flask 接收檔案]
-    B --> C[產生心情趨勢圖（SnowNLP 分析）]
-    B --> D[啟動多代理人分析（MCP）]
-    D --> E1[分析專家代理人]
-    D --> E2[AI 教練代理人]
-    E1 & E2 --> F[即時推送分析結果至前端]
-    F --> G[提供最終建議]
-```
+### 2. Task Decomposition
+- Breaking complex tasks into sub-tasks  
+- Assigning roles (planner, executor, critic)  
+- Managing dependencies between tasks  
 
 ---
 
-## 🛡️ 注意事項
+### 3. Workflow Orchestration
+- Multi-step execution pipelines  
+- Coordinating agent interactions  
+- Handling intermediate results  
 
-- **免費額度限制**：使用 Gemini API 時，請注意每日免費額度上限。若遇到 429 錯誤（RESOURCE_EXHAUSTED），可改用 OpenAI 或 HuggingFace。
-- **自動切換模型（未來功能）**：可擴充偵測模型額度用盡時，自動切換到備援模型。
-- **每個代理人擁有獨立上下文**：分析專家與 AI 教練各自擁有自己的對話記憶，提升互動真實感。
+---
+
+### 4. Multi-Agent Collaboration Patterns
+- Sequential workflows  
+- Parallel execution  
+- Feedback loops (reflection / critique)  
+
+---
+
+## 🔹 Role in Agentic AI Systems
+
+This module enables:
+
+- Building collaborative AI systems  
+- Automating complex workflows  
+- Improving reasoning through agent interaction  
+- Scaling AI systems beyond single LLM calls  
+
+---
+
+## 🔹 Example Use Cases
+
+- AI research assistant with multiple roles  
+- Automated data analysis pipeline  
+- Decision-support systems with validation agents  
+- Workflow automation across multiple steps  
+
+---
+
+## 🔹 Educational Use
+
+This module is designed as a **core teaching component** for:
+
+> *Agentic AI Engineering: Building Real-World LLM Agent Systems*
+
+It is typically introduced in:
+
+- Multi-Agent Systems module  
+- Workflow Automation module  
+
+Students will learn how to:
+- Design agent roles  
+- Implement communication flows  
+- Build collaborative AI systems  
+
+---
+
+## 🔹 Suggested Learning Path
+
+1. Start with single-agent systems  
+2. Introduce role-based agents  
+3. Build communication pipelines  
+4. Implement full multi-agent workflows  
+
+---
+
+## 🔹 Future Extensions
+
+- Distributed agent systems  
+- Real-time communication (streaming)  
+- Integration with external services  
+- Human-in-the-loop collaboration  
+
+---
+
+## 🔹 Notes
+
+- This module is designed to be flexible and extensible  
+- It can be integrated with RAG, tool use, and memory systems  
+
+---
+
+## 🔹 Author
+
+Yun-Cheng (Pecu) Tsai
+
+- [https://scholar.google.com/citations?user=a2LHNL8AAAAJ&hl](https://scholar.google.com/citations?user=a2LHNL8AAAAJ&hl)
+- [https://www.linkedin.com/in/pecutsai/](https://www.linkedin.com/in/pecutsai/)

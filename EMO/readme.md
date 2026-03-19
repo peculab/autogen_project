@@ -1,63 +1,119 @@
-# Multi-Agent Sentiment Analysis
+# 🧠 EMO Module – Emotion Analysis with LLM Integration
 
-這個專案是一個基於 Flask 的多代理（Multi-Agent）即時分析系統，用於分析使用者上傳的日記數據並生成個性化的情緒建議。專案的主要特點包括：
+This module focuses on **emotion detection, analysis, and interpretation using AI**, and is designed as a component of a larger agentic AI system.
 
-- 使用多個 AI Agent 分工合作進行分析與建議生成
-- 實時顯示各個 Agent 的分析過程及輸出
-- 自動提取最終建議並展示給使用者
+It demonstrates how structured data and natural language analysis can be combined with LLMs to generate **human-centered insights and recommendations**.
 
-## 功能概覽
+---
 
-- **即時分析進度**：通過 Socket.IO 持續更新分析進度，展示不同 Agent 的行為和輸出內容。
-- **多輪互動**：系統支持多輪的 Agent 分析互動，確保生成高質量的情緒建議。
-- **即時顯示結果**：將分析結果直接返回前端，包括提取的「最終建議」。
-- **簡化視覺化**：透過簡潔的即時進度與建議區塊，提升使用者的閱讀體驗。
+## 🔹 Overview
 
-## 如何運行專案
+The EMO module enables:
 
-1. 確保本地已安裝 Python 3.8 或更高版本，以及以下環境需求：
-    - Flask
-    - Python-dotenv
-    - 其他必要套件（可參考 `requirements.txt`）
+- Emotion analysis from textual or structured inputs  
+- AI-assisted interpretation of emotional states  
+- Integration with LLMs for contextual understanding  
+- Generation of actionable insights based on emotional signals  
 
-2. 配置環境變數：
-    - 創建一個 `.env` 文件
-    - 在 `.env` 文件中加入以下內容：
-      ```
-      GEMINI_API_KEY=your_openai_api_key
-      ```
+This module plays a key role in building **human-centered AI systems**.
 
-3. 安裝依賴：
-    ```
-    pip install -r requirements.txt
-    ```
+---
 
-4. 啟動伺服器：
-    ```
-    flask run
-    ```
-    預設會在 `http://127.0.0.1:5000` 啟動。
+## 🔹 Key Capabilities
 
-5. 開啟瀏覽器，將日記數據上傳至網頁介面，並觀察即時分析進度。
+### 1. Emotion Detection
+- Analyze sentiment and emotional patterns  
+- Identify mood or behavioral signals  
 
-## 程式碼簡介
+---
 
-- **`app.py`**  
-  Flask 應用主入口，處理使用者上傳日記、觸發分析任務，並返回前端顯示的分析結果。
+### 2. AI Interpretation
+- Use LLMs to interpret emotional context  
+- Translate raw signals into meaningful insights  
 
-- **`multiagent.py`**  
-  實作多代理分析邏輯，協同多個 AI Agent 對日記數據進行分析與建議生成，並透過 WebSocket 持續傳送更新至前端。
+---
 
-- **`EMOwithSnow.py`**  
-  提供日記數據的情緒分析與趨勢圖生成邏輯，將結果保存為圖表供前端使用。
+### 3. Insight Generation
+- Generate summaries of emotional trends  
+- Provide suggestions or recommendations  
 
-- **`requirements.txt`**  
-  列出本專案所需的 Python 套件和相應版本。
+---
 
-## 貢獻與反饋
+### 4. Integration with AI Systems
+- Can be combined with:
+  - Multi-agent systems  
+  - Workflow automation  
+  - Decision-support pipelines  
 
-歡迎提交 Issue 或 Pull Request，幫助我們改進系統性能與使用體驗！
+---
 
-## 授權
+## 🔹 Role in Agentic AI Systems
 
-[MIT License](LICENSE)
+This module enables:
+
+- Human-centered AI decision making  
+- Emotion-aware AI agents  
+- Personalized interaction systems  
+- Enhanced user understanding in AI workflows  
+
+---
+
+## 🔹 Example Use Cases
+
+- Mood tracking and analysis  
+- AI-driven coaching systems  
+- Mental wellness assistants  
+- Customer sentiment analysis  
+- Emotion-aware decision support  
+
+---
+
+## 🔹 Educational Use
+
+This module is designed as a **teaching component** for:
+
+> *Agentic AI Engineering: Building Real-World LLM Agent Systems*
+
+It can be used in:
+
+- Human-centered AI module  
+- AI interpretation and reasoning module  
+
+Students will learn how to:
+- Extract emotional signals  
+- Interpret them using LLMs  
+- Integrate them into AI systems  
+
+---
+
+## 🔹 Suggested Learning Flow
+
+1. Extract raw emotional signals  
+2. Apply sentiment or emotion analysis  
+3. Use LLMs to interpret context  
+4. Generate insights and recommendations  
+
+---
+
+## 🔹 Future Extensions
+
+- Multi-modal emotion detection (text + voice + image)  
+- Real-time emotion tracking  
+- Integration with agent memory systems  
+- Personalized AI assistants  
+
+---
+
+## 🔹 Notes
+
+- This module focuses on **interpretability and human-centered AI**  
+- Can be extended into healthcare, education, or productivity domains  
+
+---
+
+## 🔹 Author
+
+Yun-Cheng (Pecu) Tsai
+
+- [https://scholar.google.com/citations?user=a2LHNL8AAAAJ&hl](https://scholar.google.com/citations?user=a2LHNL8AAAAJ&hl)
+- [https://www.linkedin.com/in/pecutsai/](https://www.linkedin.com/in/pecutsai/)
