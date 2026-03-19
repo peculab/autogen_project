@@ -1,43 +1,55 @@
-import os
-from dotenv import load_dotenv
-import asyncio
+"""Introductory multi-agent collaboration example.
 
-# 載入 .env 檔案中的環境變數
-load_dotenv()
+Agents collaborate to research a topic and produce a short synthesis.
+This example is appropriate for an introductory lesson on agent roles,
+turn-taking, and web-assisted reasoning.
+"""
+
+import asyncio
+import os
 
 from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
 from autogen_agentchat.conditions import TextMentionTermination
 from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_agentchat.ui import Console
-from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.agents.web_surfer import MultimodalWebSurfer
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+from dotenv import load_dotenv
 
-async def main():
-    # 從 .env 讀取 Gemini API 金鑰
-    gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    
-    # 使用 Gemini API，指定 model 為 "gemini-1.5-flash-8b"
+load_dotenv()
+
+
+async def main() -> None:
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-8b")
+
+    if not gemini_api_key:
+        raise RuntimeError("GEMINI_API_KEY is not set. Please update your .env file.")
+
     model_client = OpenAIChatCompletionClient(
-        model="gemini-1.5-flash-8b",
+        model=model_name,
         api_key=gemini_api_key,
     )
-    
-    # 建立各代理人
+
     assistant = AssistantAgent("assistant", model_client)
     web_surfer = MultimodalWebSurfer("web_surfer", model_client)
     user_proxy = UserProxyAgent("user_proxy")
-    
-    # 當對話中出現 "exit" 時即終止對話
+
     termination_condition = TextMentionTermination("exit")
-    
-    # 建立一個循環團隊，讓各代理人依序參與討論
+
     team = RoundRobinGroupChat(
         [web_surfer, assistant, user_proxy],
-        termination_condition=termination_condition
+        termination_condition=termination_condition,
     )
-    
-    # 啟動團隊對話，任務是「搜尋 Gemini 的相關資訊，並撰寫一份簡短摘要」
-    await Console(team.run_stream(task="請搜尋 Gemini 的相關資訊，並撰寫一份簡短摘要。"))
 
-if __name__ == '__main__':
+    task = (
+        "Research recent information about Gemini model capabilities, "
+        "then write a concise summary for a technical practitioner. "
+        "Type 'exit' when the task is complete."
+    )
+
+    await Console(team.run_stream(task=task))
+
+
+if __name__ == "__main__":
     asyncio.run(main())

@@ -1,58 +1,190 @@
-# AutoGen Gemini 範例與寶寶照護分析工具
+# Agentic AI Engineering with AutoGen and Gemini
 
-本專案展示了如何使用 [AutoGen](https://github.com/microsoft/AutoGen) 框架結合 Gemini API，構建多代理人協作系統，實現從資料分析到社群媒體自動發文的完整工作流程。專案涵蓋多個範例，分別展示不同場景下的代理人對話、資料處理與外部應用整合。
+This repository contains teaching-ready examples for **building real-world LLM agent systems** with AutoGen-style multi-agent workflows, Gemini models, and lightweight application interfaces.
 
----
+The project can support a professional course such as:
 
-## 範例說明
+**Agentic AI Engineering: Building Real-World LLM Agent Systems**
 
-### 1. 多代理人 CSV 資料分析
-- **dataAgent.py**  
-  讀取 CSV 格式的寶寶日記資料（例如 `cuboai_baby_diary.csv`），分批（chunk）處理數據，並由多個代理人協作：
-  - **AssistantAgent**：負責分析數據與提供照護建議。
-  - **MultimodalWebSurfer**：透過外部網站搜尋最新寶寶照護資訊。
-  - **UserProxyAgent**：模擬使用者參與。
-  
-  分析結果會彙整後輸出至 CSV 檔案 `all_conversation_log.csv`。
+It is designed around the same themes highlighted in the UW PCE proposal:
+- LLM-based agent architectures
+- multi-agent collaboration
+- tool use and workflow automation
+- retrieval and grounded reasoning
+- deployment-oriented application design
 
-- **multiDataAgent.py**  
-  進一步展示多模型協作：
-  - 使用 Gemini 的不同模型（如 `gemini-1.5-flash-8b` 與 `gemini-2.0-flash`）分別處理初步分析與結果整合。
-  - 多階段 prompt 協同處理 CSV 資料，最終生成包含分析細節的回應，並以非同步方式逐步回傳結果。
+## Why this repository matters
 
-- **multiDataAgentUI.py**  
-  基於 Gradio 建立互動式使用者介面：
-  - 使用者可上傳 CSV 檔案，系統自動將檔案分區塊讀取、生成摘要，並由代理人依序進行分析。
-  - 介面支援即時顯示分析進度與對話紀錄，最後將完整對話保存為 `conversation_log.csv`。
+Many generative AI tutorials stop at prompt engineering. This repository goes one step further and shows how to build **agentic AI systems** that can:
+- coordinate multiple agents
+- process structured data such as CSV files
+- combine analysis with external tools or web access
+- support real user workflows through web apps and dashboards
 
-### 2. 多代理人對話範例
-- **multiAgent.py**  
-  展示簡單的多代理人對話系統：
-  - 建立包含 **AssistantAgent**、**MultimodalWebSurfer** 與 **UserProxyAgent** 的團隊。
-  - 利用輪詢方式進行對話，任務為搜尋 Gemini 相關資訊並撰寫簡短摘要，直到收到 `"exit"` 終止指令。
+These materials can be adapted into a short professional course, an advanced elective, or a capstone-oriented applied AI offering.
 
-### 3. 自動化社群媒體發文
-- **postAI.py**  
-  利用 [Playwright](https://playwright.dev/) 自動化 Facebook 貼文流程：
-  - 從 `.env` 讀取 Facebook 帳號與密碼。
-  - 模擬使用者登入 Facebook、打開發文對話框並輸入內容，最後自動發佈貼文。
-  - 過程中會截圖以供除錯與確認。
+## Repository map
 
----
+### Core teaching examples
 
-## 前置需求
+- `main.py`
+  - Minimal LLM client example using a Gemini-compatible chat completion interface.
+  - Good for introducing environment setup, model calls, and async execution.
 
-- **Python 版本**：3.10 或更新版本
-- **必備套件**：
-  - `python-dotenv`
-  - `autogen-agentchat`
-  - `autogen-ext[openai]`
-  - `pandas`
-  - `gradio`
-  - `playwright`
-  - 其他依賴請參考各模組的 requirements
+- `multiAgent.py`
+  - Introductory multi-agent collaboration example.
+  - Demonstrates how a researcher, a web-enabled agent, and a user proxy can work together on a task.
+  - Best aligned with **Module 2: Multi-Agent Collaboration**.
 
-- **瀏覽器二進位檔**（僅針對 `postAI.py` 使用 Playwright）  
-  安裝後執行：
-  ```bash
-  playwright install
+- `dataAgent.py`
+  - Chunk-based structured data analysis workflow for CSV files.
+  - Demonstrates multi-agent reasoning over records, prompt construction, and logging of outputs.
+  - Best aligned with **Module 4: Workflow Automation**.
+
+- `multiDataAgent.py`
+  - Streaming, chunk-level analysis pipeline with optional synthesis.
+  - Best aligned with **Modules 3-4: Tool Use and Workflow Automation**.
+
+- `multiDataAgentUI.py`
+  - Gradio-based front end for uploading CSV files and receiving streaming analysis updates.
+  - Best aligned with **Module 6: Deployment and Evaluation**.
+
+### Applied application demos
+
+- `EMO/`
+  - Multi-agent diary and sentiment analysis application.
+  - Demonstrates Flask, Socket.IO, charting, and agent collaboration for user-facing applications.
+
+- `MCP/`
+  - A multi-agent application using a Model Context Protocol-style abstraction.
+  - Useful for discussing model portability and system architecture choices.
+
+- `Jubo/`
+  - Playwright-based healthcare workflow automation and Gemini-assisted reporting examples.
+  - Useful for real-world workflow orchestration and domain-specific AI applications.
+
+- `DRai/`
+  - Batch transcript evaluation and PDF reporting pipeline.
+  - Useful for discussing applied evaluation workflows and report generation.
+
+## Suggested course mapping
+
+### Module 1 - Foundations of Agentic AI
+- `main.py`
+- `multiAgent.py`
+
+### Module 2 - Multi-Agent Collaboration
+- `multiAgent.py`
+- `EMO/multiagent.py`
+- `MCP/multiagent.py`
+
+### Module 3 - Tool Use and Function Calling
+- `Jubo/playwright_gemini_html.py`
+- examples extended from `multiDataAgent.py`
+
+### Module 4 - Workflow Automation
+- `dataAgent.py`
+- `multiDataAgent.py`
+- `DRai/DRai.py`
+
+### Module 5 - RAG and Knowledge Systems
+- This repository does not yet include a full RAG module.
+- A natural next upgrade would be adding a `course/week5_rag.ipynb` example using FAISS and domain documents.
+
+### Module 6 - Deployment and Evaluation
+- `multiDataAgentUI.py`
+- `EMO/app.py`
+- `MCP/app.py`
+
+## Learning outcomes supported by this repo
+
+Using these examples, learners can practice how to:
+1. design an LLM-based agent workflow
+2. build multi-agent systems for structured and unstructured tasks
+3. integrate external tools into an AI workflow
+4. process real data and log intermediate reasoning outputs
+5. build lightweight user interfaces for applied AI systems
+6. turn prototypes into portfolio-ready projects
+
+## Recommended audience
+
+This repository is especially suitable for:
+- software engineers moving into AI engineering
+- data analysts transitioning toward LLM application development
+- technical professionals learning applied agent workflows
+- instructors building project-based agentic AI courses
+
+## Quick start
+
+### 1. Create a virtual environment
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+On Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+### 2. Install dependencies
+
+Install the dependencies required by the specific demo you want to run. Common packages used in this repository include:
+
+```bash
+pip install python-dotenv pandas gradio playwright autogen-agentchat autogen-ext[openai]
+```
+
+Install Playwright browsers when needed:
+
+```bash
+playwright install
+```
+
+### 3. Configure environment variables
+
+Create a `.env` file in the project root:
+
+```dotenv
+GEMINI_API_KEY=your_api_key_here
+GEMINI_MODEL=gemini-2.0-flash
+```
+
+Optional variables used by some demos:
+
+```dotenv
+CSV_FILE_PATH=cuboai_baby_diary.csv
+FACEBOOK_EMAIL=your_email
+FACEBOOK_PASSWORD=your_password
+```
+
+### 4. Run a simple example
+
+```bash
+python main.py
+```
+
+### 5. Run the multi-agent example
+
+```bash
+python multiAgent.py
+```
+
+## Current limitations and next upgrades
+
+This repository already demonstrates strong foundations for an applied course, but the following upgrades would make it even more course-ready:
+- add a dedicated English notebook sequence under `course/`
+- add a full RAG example with embeddings and a vector store
+- standardize logging and evaluation metrics across demos
+- add Docker or cloud deployment examples for capstone projects
+
+## Educational note
+
+Some original materials in this repository were first written in Chinese. This version updates the top-level documentation in English and better aligns the codebase with a professional course proposal focused on **agentic AI engineering**.
+
+## License
+
+MIT License. See `LICENSE` for details.
